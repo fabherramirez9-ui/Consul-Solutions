@@ -83,7 +83,6 @@ function App() {
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
   };
 
   const authContextValue = {
