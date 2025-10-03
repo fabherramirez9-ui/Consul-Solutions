@@ -48,7 +48,7 @@ const SuggestionsView = () => {
     
     try {
       // Create selection record
-      await axios.post(`${API}/selections`, {
+      await api.post('/selections', {
         items: selectedItems,
         estado: "ACTIVO"
       });
