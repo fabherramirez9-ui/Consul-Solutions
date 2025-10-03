@@ -439,7 +439,8 @@ async def get_document_templates():
 
 @api_router.get("/tramites", response_model=List[Tramite])
 async def get_tramites():
-    tramites = await db.tramites.find({"activo": True}).to_list(None)
+    tramites_raw = await db.tramites.find({"activo": True}).to_list(None)
+    tramites = convert_objectid(tramites_raw)
     return [Tramite(**tramite) for tramite in tramites]
 
 @api_router.post("/webhooks/pago")
