@@ -311,18 +311,28 @@ class AIConsultation(BaseModel):
 # Authentication helpers
 def create_jwt_token(user_data: dict) -> str:
     """Create JWT token for user authentication"""
+    # Ensure we have a valid JWT secret
+    secret = JWT_SECRET if JWT_SECRET else 'demo-secret-key-not-for-production'
+    
+    # Ensure datetime objects are serializable
+    user_id = str(user_data.get("id", "demo-user"))
+    email = str(user_data.get("email", "demo@example.com"))
+    
     payload = {
-        "user_id": user_data["id"],
-        "email": user_data["email"],
+        "user_id": user_id,
+        "email": email,
         "exp": datetime.utcnow() + timedelta(hours=24),
-        "iat": datetime.utcnow()
+        "iat": datetime.utcnow(),
+        "demo_mode": DEMO_MODE
     }
-    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    
+    return jwt.encode(payload, secret, algorithm="HS256")
 
 def verify_jwt_token(token: str) -> dict:
     """Verify JWT token and return user data"""
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        secret = JWT_SECRET if JWT_SECRET else 'demo-secret-key-not-for-production'
+        payload = jwt.decode(token, secret, algorithms=["HS256"])
         return payload
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
