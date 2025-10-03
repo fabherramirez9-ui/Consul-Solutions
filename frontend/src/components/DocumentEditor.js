@@ -25,8 +25,7 @@ const DocumentEditor = () => {
 
   const loadTemplate = async () => {
     try {
-      const templatesResponse = await axios.get(`${API}/templates`);
-      const templates = templatesResponse.data;
+      const templates = await api.get('/templates');
       
       if (templateId) {
         const selectedTemplate = templates.find(t => t.id === templateId);
