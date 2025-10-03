@@ -1,6 +1,6 @@
 <file>
       <absolute_file_name>/app/backend/migrate_to_supabase.py</absolute_file_name>
-      <content">#!/usr/bin/env python3
+      <content>#!/usr/bin/env python3
 """
 Migration script to transfer data from MongoDB to Supabase
 for COFEPRIS Compliance Application
