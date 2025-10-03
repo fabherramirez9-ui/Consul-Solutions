@@ -586,8 +586,9 @@ async def login_user(login_data: UserLogin):
             if auth_response.error:
                 raise HTTPException(status_code=401, detail="Invalid credentials")
             
-            # Get user from mock database or create if first time
-            user_response = supabase.table("users").select("*").eq("email", login_data.email).execute()
+            # Get user from mock database or create if first time  
+            user_query = supabase.table("users").select("*").eq("email", login_data.email)
+            user_response = user_query.execute() if hasattr(user_query, 'execute') else user_query
             
             if user_response.data:
                 user_data = user_response.data[0]
