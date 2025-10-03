@@ -98,7 +98,7 @@ function App() {
     token,
     login,
     logout,
-    isAuthenticated: !!token
+    isAuthenticated: !!(token && user)
   };
 
   if (loading) {
