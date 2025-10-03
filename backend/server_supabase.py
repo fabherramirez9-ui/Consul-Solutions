@@ -502,84 +502,115 @@ async def generate_suggestions(perfil: Dict[str, Any]) -> SuggestionResponse:
 @api_router.post("/auth/register", response_model=Dict[str, Any])
 async def register_user(user_data: UserCreate):
     try:
-        # For demo purposes with mock Supabase
-        if hasattr(supabase, 'table_cache'):
-            # Mock registration
+        if DEMO_MODE:
+            # Mock registration - always succeeds
+            auth_response = supabase.auth.sign_up({
+                "email": user_data.email,
+                "password": user_data.password
+            })
+            
+            if auth_response.error:
+                raise HTTPException(status_code=400, detail=auth_response.error)
+            
+            # Create user profile
             user_dict = user_data.dict()
-            del user_dict["password"]  # Don't store password in demo
-            user_dict["id"] = str(uuid.uuid4())
+            del user_dict["password"]  # Don't store password
+            user_dict["id"] = auth_response.data["user"]["id"]
             user_dict["created_at"] = datetime.utcnow()
             user_dict["updated_at"] = datetime.utcnow()
             
-            # Store in mock table
+            # Store user profile
             supabase.table("users").insert(user_dict)
             
             # Create JWT token
             token = create_jwt_token(user_dict)
             return {"token": token, "user": User(**user_dict)}
         
-        # Real Supabase registration
-        response = supabase.auth.sign_up({
-            "email": user_data.email,
-            "password": user_data.password
-        })
+        else:
+            # Real Supabase registration
+            response = supabase.auth.sign_up({
+                "email": user_data.email,
+                "password": user_data.password
+            })
+            
+            if response.error:
+                raise HTTPException(status_code=400, detail=response.error.message)
+            
+            # Store additional user data
+            user_dict = user_data.dict()
+            del user_dict["password"]
+            user_dict["id"] = response.user.id
+            user_dict["created_at"] = datetime.utcnow()
+            user_dict["updated_at"] = datetime.utcnow()
+            
+            supabase.table("users").insert(user_dict).execute()
+            
+            token = create_jwt_token(user_dict)
+            return {"token": token, "user": User(**user_dict)}
         
-        if response.error:
-            raise HTTPException(status_code=400, detail=response.error.message)
-        
-        # Store additional user data
-        user_dict = user_data.dict()
-        del user_dict["password"]
-        user_dict["id"] = response.user.id
-        user_dict["created_at"] = datetime.utcnow()
-        user_dict["updated_at"] = datetime.utcnow()
-        
-        supabase.table("users").insert(user_dict).execute()
-        
-        token = create_jwt_token(user_dict)
-        return {"token": token, "user": User(**user_dict)}
-        
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
 
 @api_router.post("/auth/login", response_model=Dict[str, Any])
 async def login_user(login_data: UserLogin):
     try:
-        # For demo purposes with mock Supabase
-        if hasattr(supabase, 'table_cache'):
-            # Mock login - just return a token for any email/password
-            user_dict = {
-                "id": "demo-user-" + str(uuid.uuid4())[:8],
+        if DEMO_MODE:
+            # Mock login using the mock auth system
+            auth_response = supabase.auth.sign_in_with_password({
                 "email": login_data.email,
-                "nombre": "Usuario Demo",
-                "rol": "usuario_final",
-                "estado_suscripcion": "ACTIVA",
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow()
-            }
+                "password": login_data.password
+            })
             
-            token = create_jwt_token(user_dict)
-            return {"token": token, "user": User(**user_dict)}
+            if auth_response.error:
+                raise HTTPException(status_code=401, detail="Invalid credentials")
+            
+            # Get user from mock database or create if first time
+            user_response = supabase.table("users").select("*").eq("email", login_data.email).execute()
+            
+            if user_response.data:
+                user_data = user_response.data[0]
+            else:
+                # Create demo user profile if not exists
+                user_data = {
+                    "id": auth_response.data["user"]["id"],
+                    "email": login_data.email,
+                    "nombre": "Usuario Demo",
+                    "telefono": None,
+                    "rol": "usuario_final",
+                    "estado_suscripcion": "ACTIVA",
+                    "fecha_renovacion": (datetime.utcnow() + timedelta(days=30)).isoformat(),
+                    "rfc": None,
+                    "razon_social": None,
+                    "created_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow()
+                }
+                supabase.table("users").insert(user_data)
+            
+            token = create_jwt_token(user_data)
+            return {"token": token, "user": User(**user_data)}
         
-        # Real Supabase login
-        response = supabase.auth.sign_in_with_password({
-            "email": login_data.email,
-            "password": login_data.password
-        })
-        
-        if response.error:
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-        
-        # Get user details
-        user_response = supabase.table("users").select("*").eq("id", response.user.id).execute()
-        
-        if not user_response.data:
-            raise HTTPException(status_code=404, detail="User profile not found")
-        
-        user_data = user_response.data[0]
-        token = create_jwt_token(user_data)
-        
-        return {"token": token, "user": User(**user_data)}
+        else:
+            # Real Supabase login
+            response = supabase.auth.sign_in_with_password({
+                "email": login_data.email,
+                "password": login_data.password
+            })
+            
+            if response.error:
+                raise HTTPException(status_code=401, detail="Invalid credentials")
+            
+            # Get user details
+            user_response = supabase.table("users").select("*").eq("id", response.user.id).execute()
+            
+            if not user_response.data:
+                raise HTTPException(status_code=404, detail="User profile not found")
+            
+            user_data = user_response.data[0]
+            token = create_jwt_token(user_data)
+            
+            return {"token": token, "user": User(**user_data)}
         
     except HTTPException:
         raise
