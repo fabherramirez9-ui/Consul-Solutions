@@ -586,28 +586,20 @@ async def login_user(login_data: UserLogin):
             if auth_response.error:
                 raise HTTPException(status_code=401, detail="Invalid credentials")
             
-            # Get user from mock database or create if first time  
-            user_query = supabase.table("users").select("*").eq("email", login_data.email)
-            user_response = user_query.execute() if hasattr(user_query, 'execute') else user_query
-            
-            if user_response.data:
-                user_data = user_response.data[0]
-            else:
-                # Create demo user profile if not exists
-                user_data = {
-                    "id": auth_response.data["user"]["id"],
-                    "email": login_data.email,
-                    "nombre": "Usuario Demo",
-                    "telefono": None,
-                    "rol": "usuario_final",
-                    "estado_suscripcion": "ACTIVA",
-                    "fecha_renovacion": (datetime.utcnow() + timedelta(days=30)).isoformat(),
-                    "rfc": None,
-                    "razon_social": None,
-                    "created_at": datetime.utcnow(),
-                    "updated_at": datetime.utcnow()
-                }
-                supabase.table("users").insert(user_data)
+            # For demo, just create user data from auth response
+            user_data = {
+                "id": auth_response.data["user"]["id"],
+                "email": login_data.email,
+                "nombre": "Usuario Demo",
+                "telefono": None,
+                "rol": "usuario_final",
+                "estado_suscripcion": "ACTIVA",
+                "fecha_renovacion": (datetime.utcnow() + timedelta(days=30)).isoformat(),
+                "rfc": None,
+                "razon_social": None,
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow()
+            }
             
             token = create_jwt_token(user_data)
             return {"token": token, "user": User(**user_data)}
