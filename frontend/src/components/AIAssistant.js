@@ -47,7 +47,7 @@ const AIAssistant = () => {
         situacion_especifica: consultation.pregunta
       };
 
-      const consultationResponse = await axios.post(`${API}/ai/consultation`, {
+      const consultationResponse = await api.post('/ai/consultation', {
         perfil: perfil,
         pregunta: consultation.pregunta
       });
