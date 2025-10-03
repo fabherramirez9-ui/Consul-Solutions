@@ -25,89 +25,151 @@ SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY')
 SUPABASE_SERVICE_KEY = os.environ.get('SUPABASE_SERVICE_KEY')
 JWT_SECRET = os.environ.get('JWT_SECRET')
 
-# For demo purposes, we'll use a mock Supabase configuration if not provided
-if not SUPABASE_URL or SUPABASE_URL == 'https://your-project.supabase.co':
+# Check if we have real Supabase configuration
+DEMO_MODE = not SUPABASE_URL or SUPABASE_URL == 'https://your-project.supabase.co' or not SUPABASE_SERVICE_KEY
+
+if DEMO_MODE:
+    print("🔧 Using mock Supabase configuration for demo")
     SUPABASE_URL = 'https://mock-supabase-demo.co'
     SUPABASE_ANON_KEY = 'mock-anon-key'
     SUPABASE_SERVICE_KEY = 'mock-service-key'
-    JWT_SECRET = 'mock-jwt-secret'
-    print("🔧 Using mock Supabase configuration for demo")
+    JWT_SECRET = 'mock-jwt-secret-for-demo-only'
 
-# Create Supabase clients
-try:
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-    supabase_admin: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-    print("✅ Supabase clients initialized successfully")
-except Exception as e:
-    print(f"⚠️  Using mock Supabase clients for demo: {e}")
-    # Mock client for demo purposes
-    class MockSupabaseClient:
-        def __init__(self):
-            self.auth = MockAuth()
-            self.table_cache = {}
-        
-        def table(self, name):
-            if name not in self.table_cache:
-                self.table_cache[name] = MockTable(name)
-            return self.table_cache[name]
+# Mock Supabase client for demo mode
+class MockSupabaseClient:
+    def __init__(self):
+        self.auth = MockAuth()
+        self.table_cache = {}
+        self.storage_cache = {}
     
-    class MockAuth:
-        def sign_up(self, credentials):
-            return MockResponse({"user": {"id": str(uuid.uuid4()), "email": credentials.get("email")}})
-        
-        def sign_in_with_password(self, credentials):
-            return MockResponse({"user": {"id": "mock-user-id", "email": credentials.get("email")}, "session": {"access_token": "mock-token"}})
+    def table(self, name):
+        if name not in self.table_cache:
+            self.table_cache[name] = MockTable(name)
+        return self.table_cache[name]
     
-    class MockTable:
-        def __init__(self, name):
-            self.name = name
-            self.data = []
+    def storage(self):
+        return MockStorage()
+
+class MockAuth:
+    def __init__(self):
+        self.users_db = {}  # Simple in-memory user store for demo
+    
+    def sign_up(self, credentials):
+        email = credentials.get("email")
+        password = credentials.get("password")
         
-        def insert(self, data):
-            if isinstance(data, dict):
-                data['id'] = str(uuid.uuid4())
-                data['created_at'] = datetime.utcnow().isoformat()
-                data['updated_at'] = datetime.utcnow().isoformat()
-                self.data.append(data)
+        if email in self.users_db:
+            return MockResponse(None, error="User already exists")
+        
+        user_id = str(uuid.uuid4())
+        user = {
+            "id": user_id,
+            "email": email,
+            "created_at": datetime.utcnow().isoformat()
+        }
+        self.users_db[email] = {"user": user, "password": password}
+        
+        return MockResponse({"user": user, "session": {"access_token": f"mock_token_{user_id}"}})
+    
+    def sign_in_with_password(self, credentials):
+        email = credentials.get("email")
+        password = credentials.get("password")
+        
+        if email not in self.users_db:
+            return MockResponse(None, error="Invalid credentials")
+        
+        stored = self.users_db[email]
+        if stored["password"] != password:
+            return MockResponse(None, error="Invalid credentials")
+        
+        return MockResponse({
+            "user": stored["user"], 
+            "session": {"access_token": f"mock_token_{stored['user']['id']}"}
+        })
+
+class MockStorage:
+    def from_(self, bucket):
+        return MockBucket(bucket)
+
+class MockBucket:
+    def __init__(self, name):
+        self.bucket_name = name
+    
+    def upload(self, path, file_data):
+        return MockResponse({"path": path, "size": len(file_data) if isinstance(file_data, bytes) else 1024})
+    
+    def create_signed_url(self, path, expires_in=3600):
+        return MockResponse({"signedURL": f"https://mock-storage.supabase.co/{self.bucket_name}/{path}"})
+
+class MockTable:
+    def __init__(self, name):
+        self.name = name
+        self.data = []
+    
+    def insert(self, data):
+        if isinstance(data, dict):
+            data = data.copy()  # Don't modify original
+            data['id'] = str(uuid.uuid4())
+            data['created_at'] = datetime.utcnow().isoformat()
+            data['updated_at'] = datetime.utcnow().isoformat()
+            self.data.append(data)
             return MockResponse([data])
-        
-        def select(self, columns="*"):
-            return MockQuery(self.data)
-        
-        def update(self, data):
-            return MockQuery(self.data, update_data=data)
-        
-        def delete(self):
-            return MockQuery([])
+        return MockResponse([])
     
-    class MockQuery:
-        def __init__(self, data, update_data=None):
-            self.data = data
-            self.update_data = update_data
-        
-        def eq(self, column, value):
-            if self.update_data:
-                # Update matching records
-                for item in self.data:
-                    if item.get(column) == value:
-                        item.update(self.update_data)
-                        item['updated_at'] = datetime.utcnow().isoformat()
-                return MockResponse(self.data)
-            else:
-                # Filter data
-                filtered = [item for item in self.data if item.get(column) == value]
-                return MockResponse(filtered)
-        
-        def execute(self):
-            return MockResponse(self.data)
+    def select(self, columns="*"):
+        return MockQuery(self.data)
     
-    class MockResponse:
-        def __init__(self, data):
-            self.data = data
-            self.error = None
+    def update(self, data):
+        return MockQuery(self.data, update_data=data)
     
+    def delete(self):
+        return MockQuery([])
+
+class MockQuery:
+    def __init__(self, data, update_data=None):
+        self.data = data if data else []
+        self.update_data = update_data
+    
+    def eq(self, column, value):
+        if self.update_data:
+            # Update matching records
+            updated = []
+            for item in self.data:
+                if item.get(column) == value:
+                    item.update(self.update_data)
+                    item['updated_at'] = datetime.utcnow().isoformat()
+                    updated.append(item)
+            return MockResponse(updated)
+        else:
+            # Filter data
+            filtered = [item for item in self.data if item.get(column) == value]
+            return MockResponse(filtered)
+    
+    def execute(self):
+        return MockResponse(self.data)
+
+class MockResponse:
+    def __init__(self, data, error=None):
+        self.data = data if data is not None else []
+        self.error = error
+
+# Initialize clients
+if DEMO_MODE:
     supabase = MockSupabaseClient()
     supabase_admin = MockSupabaseClient()
+    print("✅ Mock Supabase clients initialized for demo")
+else:
+    try:
+        supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+        supabase_admin: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        print("✅ Real Supabase clients initialized successfully")
+    except Exception as e:
+        print(f"❌ Failed to initialize Supabase clients: {e}")
+        # Fallback to mock mode
+        supabase = MockSupabaseClient()
+        supabase_admin = MockSupabaseClient()
+        DEMO_MODE = True
+        print("✅ Fallback to mock Supabase clients")
 
 # Create the main app without a prefix
 app = FastAPI(title="COFEPRIS Compliance API with Supabase", version="2.0.0")
