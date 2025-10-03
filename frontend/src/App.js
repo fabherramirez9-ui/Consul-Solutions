@@ -42,9 +42,22 @@ function App() {
       if (token) {
         try {
           // Validate token by making a request to user profile
-          const response = await axios.get(`${API}/establishments`);
-          // If request succeeds, token is valid
-          setLoading(false);
+          const response = await fetch(`${API}/establishments`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          if (response.ok) {
+            // Token is valid
+            setLoading(false);
+          } else {
+            // Token is invalid
+            localStorage.removeItem('token');
+            setToken(null);
+            setUser(null);
+            setLoading(false);
+          }
         } catch (error) {
           // Token is invalid
           localStorage.removeItem('token');
