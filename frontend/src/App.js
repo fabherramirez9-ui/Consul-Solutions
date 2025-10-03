@@ -34,10 +34,7 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
-  // Set up axios interceptor for authentication
-  useEffect(() => {
-    axios.defaults.headers.common['Authorization'] = token ? `Bearer ${token}` : '';
-  }, [token]);
+  // No need for axios interceptor with fetch
 
   // Check authentication status on app load
   useEffect(() => {
