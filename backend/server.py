@@ -276,13 +276,29 @@ Tu tono debe ser empático, profesional y educativo. No brindas asesoría legal 
         return f"Error en análisis: {str(e)}", "No se pudo generar recomendación. Intente nuevamente."
 
 # Suggestion engine
+def convert_objectid(data):
+    """Convert MongoDB ObjectId to string recursively."""
+    if isinstance(data, list):
+        return [convert_objectid(item) for item in data]
+    elif isinstance(data, dict):
+        if '_id' in data:
+            del data['_id']  # Remove MongoDB _id field
+        return {key: convert_objectid(value) for key, value in data.items()}
+    else:
+        return data
+
 async def generate_suggestions(perfil: Dict[str, Any]) -> SuggestionResponse:
     """Generate document and procedure suggestions based on establishment profile."""
     
     # Get all templates and rules
-    templates = await db.documento_plantillas.find({"activo": True}).to_list(None)
-    tramites = await db.tramites.find({"activo": True}).to_list(None)
-    rules = await db.reglas_sugerencia.find({"activo": True}).to_list(None)
+    templates_raw = await db.documento_plantillas.find({"activo": True}).to_list(None)
+    tramites_raw = await db.tramites.find({"activo": True}).to_list(None)
+    rules_raw = await db.reglas_sugerencia.find({"activo": True}).to_list(None)
+    
+    # Convert ObjectIds to avoid serialization errors
+    templates = convert_objectid(templates_raw)
+    tramites = convert_objectid(tramites_raw)
+    rules = convert_objectid(rules_raw)
     
     suggested_templates = []
     suggested_tramites = []
