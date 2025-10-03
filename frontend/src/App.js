@@ -6,6 +6,7 @@ import "./App.css";
 // Components
 import Welcome from "./components/Welcome";
 import Auth from "./components/Auth";
+import SimpleLogin from "./components/SimpleLogin";
 import Dashboard from "./components/Dashboard";
 import ProfilingWizard from "./components/ProfilingWizard";
 import SuggestionsView from "./components/SuggestionsView";
