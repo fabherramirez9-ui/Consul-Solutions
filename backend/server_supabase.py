@@ -166,6 +166,9 @@ class MockResponse:
     def __init__(self, data, error=None):
         self.data = data if data is not None else []
         self.error = error
+    
+    def execute(self):
+        return self
 
 # Initialize clients
 if DEMO_MODE:
