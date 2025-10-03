@@ -2,11 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Shield, FileText, Brain, BookOpen, FolderOpen, Plus, AlertTriangle, CheckCircle, Clock, TrendingUp, Users, Building } from "lucide-react";
 import { toast } from "sonner";
-import axios from "axios";
 import { useAuth } from "../App";
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { api } from "../utils/api";
 
 const Dashboard = () => {
   const navigate = useNavigate();
