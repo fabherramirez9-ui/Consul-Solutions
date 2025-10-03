@@ -116,9 +116,7 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Welcome />} />
-            <Route path="/auth" element={
-              authContextValue.isAuthenticated ? <Navigate to="/dashboard" /> : <Auth />
-            } />
+            <Route path="/auth" element={<Auth />} />
             <Route path="/simple-login" element={<SimpleLogin />} />
             <Route path="/test-login" element={<TestLogin />} />
             <Route path="/dashboard" element={
