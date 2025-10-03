@@ -77,7 +77,6 @@ function App() {
     setUser(userData);
     setToken(authToken);
     localStorage.setItem('token', authToken);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
   };
 
   const logout = () => {
