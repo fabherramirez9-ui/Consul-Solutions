@@ -111,26 +111,35 @@ const Auth = () => {
       // Mock payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Simulate successful payment webhook
-      await axios.post(`${API}/webhooks/pago`, {
-        user_id: "mock_user_id",
-        status: "paid"
+      console.log("Processing payment and registration...");
+      
+      // Register user after payment
+      const response = await fetch(`${API}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nombre: formData.nombre,
+          email: formData.email,
+          password: formData.password,
+          telefono: formData.telefono,
+          rfc: formData.rfc,
+          razon_social: formData.razon_social
+        })
       });
       
-      // Register and login user
-      const response = await axios.post(`${API}/auth/register`, {
-        nombre: formData.nombre,
-        email: formData.email,
-        password: formData.password,
-        telefono: formData.telefono,
-        rfc: formData.rfc,
-        razon_social: formData.razon_social
-      });
+      const data = await response.json();
       
-      login(response.data.user, response.data.token);
-      toast.success("¡Pago procesado! Suscripción activada por 30 días");
-      navigate("/profiling");
+      if (response.ok) {
+        login(data.user, data.token);
+        toast.success("¡Pago procesado! Suscripción activada por 30 días");
+        navigate("/profiling");
+      } else {
+        toast.error(data.detail || "Error procesando el registro");
+      }
     } catch (error) {
+      console.error("Payment error:", error);
       toast.error("Error procesando el pago. Intenta nuevamente.");
     } finally {
       setLoading(false);
