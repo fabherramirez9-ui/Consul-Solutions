@@ -344,40 +344,50 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     token = credentials.credentials
     
     try:
-        # For mock demo, accept any token that starts with "token_" or "mock"
-        if token.startswith("token_") or token.startswith("mock"):
-            # Extract user_id from token for mock purposes
-            if token.startswith("token_"):
-                parts = token.split("_")
-                user_id = parts[1] if len(parts) > 1 else "mock-user-id"
-            else:
-                user_id = "mock-user-id"
-            
-            # Return mock user data
-            return User(
-                id=user_id,
-                nombre="Usuario Demo",
-                email="demo@example.com",
-                rol=UserRole.usuario_final,
-                estado_suscripcion=SubscriptionStatus.ACTIVA
-            )
-        
-        # Try to verify real JWT token
+        # First, try to verify JWT token
         payload = verify_jwt_token(token)
+        user_id = payload.get("user_id")
         
-        # Get user from Supabase
-        response = supabase.table("users").select("*").eq("id", payload["user_id"]).execute()
+        if DEMO_MODE or payload.get("demo_mode", False):
+            # In demo mode, create user data from token payload or use defaults
+            user_data = {
+                "id": user_id,
+                "email": payload.get("email", "demo@example.com"),
+                "nombre": "Usuario Demo",
+                "telefono": None,
+                "rol": "usuario_final",
+                "estado_suscripcion": "ACTIVA",
+                "fecha_renovacion": (datetime.utcnow() + timedelta(days=30)).isoformat(),
+                "rfc": None,
+                "razon_social": None,
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow()
+            }
+            return User(**user_data)
         
-        if not response.data:
-            raise HTTPException(status_code=401, detail="User not found")
-        
-        user_data = response.data[0]
-        return User(**user_data)
+        else:
+            # Get user from real Supabase
+            response = supabase.table("users").select("*").eq("id", user_id).execute()
+            
+            if not response.data:
+                raise HTTPException(status_code=401, detail="User not found")
+            
+            user_data = response.data[0]
+            return User(**user_data)
     
     except HTTPException:
         raise
     except Exception as e:
         print(f"Auth error: {e}")
+        # Fallback for old token formats in demo
+        if DEMO_MODE and (token.startswith("token_") or token.startswith("mock")):
+            return User(
+                id="demo-user-fallback",
+                nombre="Usuario Demo",
+                email="demo@example.com",
+                rol=UserRole.usuario_final,
+                estado_suscripcion=SubscriptionStatus.ACTIVA
+            )
         raise HTTPException(status_code=401, detail="Authentication failed")
 
 # AI Chat helper (same as before)
