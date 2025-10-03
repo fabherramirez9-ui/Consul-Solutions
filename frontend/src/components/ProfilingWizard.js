@@ -90,10 +90,33 @@ const ProfilingWizard = () => {
     
     try {
       // Create establishment profile
-      await axios.post(`${API}/establishments`, formData);
+      const establishmentResponse = await fetch(`${API}/establishments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
+      
+      if (!establishmentResponse.ok) {
+        throw new Error('Error creating establishment');
+      }
       
       // Generate suggestions immediately
-      const suggestionsResponse = await axios.post(`${API}/suggestions`, formData);
+      const suggestionsResponse = await fetch(`${API}/suggestions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+      
+      if (!suggestionsResponse.ok) {
+        throw new Error('Error generating suggestions');
+      }
+      
+      const suggestionsData = await suggestionsResponse.json();
       
       toast.success("¡Perfil creado! Generando sugerencias personalizadas...");
       
@@ -101,11 +124,12 @@ const ProfilingWizard = () => {
       navigate("/suggestions", { 
         state: { 
           profile: formData, 
-          suggestions: suggestionsResponse.data 
+          suggestions: suggestionsData 
         } 
       });
     } catch (error) {
-      toast.error("Error al crear perfil: " + (error.response?.data?.detail || error.message));
+      console.error("Profiling error:", error);
+      toast.error("Error al crear perfil: " + error.message);
     } finally {
       setLoading(false);
     }
