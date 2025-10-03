@@ -2,11 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { FileText, AlertTriangle, CheckCircle, ShoppingCart, Eye, Edit, Shield, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import axios from "axios";
 import { useAuth } from "../App";
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { api } from "../utils/api";
 
 const SuggestionsView = () => {
   const navigate = useNavigate();
