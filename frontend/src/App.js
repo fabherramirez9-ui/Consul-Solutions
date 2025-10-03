@@ -114,6 +114,7 @@ function App() {
               authContextValue.isAuthenticated ? <Navigate to="/dashboard" /> : <Auth />
             } />
             <Route path="/simple-login" element={<SimpleLogin />} />
+            <Route path="/test-login" element={<TestLogin />} />
             <Route path="/dashboard" element={
               authContextValue.isAuthenticated ? <Dashboard /> : <Navigate to="/auth" />
             } />
