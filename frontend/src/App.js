@@ -50,7 +50,18 @@ function App() {
           });
           
           if (response.ok) {
-            // Token is valid
+            // Token is valid - set user from token or create demo user
+            if (!user) {
+              // Create demo user data for auth state
+              const demoUser = {
+                id: "demo-user",
+                nombre: "Usuario Demo",
+                email: "demo@cofepris.com",
+                rol: "usuario_final",
+                estado_suscripcion: "ACTIVA"
+              };
+              setUser(demoUser);
+            }
             setLoading(false);
           } else {
             // Token is invalid
