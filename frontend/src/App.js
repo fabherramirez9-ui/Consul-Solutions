@@ -34,6 +34,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
+  const [isReady, setIsReady] = useState(false);
 
   // No need for axios interceptor with fetch
 
