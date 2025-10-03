@@ -433,7 +433,8 @@ async def ai_consultation(request: AIConsultationRequest, current_user: User = D
 
 @api_router.get("/templates", response_model=List[DocumentTemplate])
 async def get_document_templates():
-    templates = await db.documento_plantillas.find({"activo": True}).to_list(None)
+    templates_raw = await db.documento_plantillas.find({"activo": True}).to_list(None)
+    templates = convert_objectid(templates_raw)
     return [DocumentTemplate(**template) for template in templates]
 
 @api_router.get("/tramites", response_model=List[Tramite])
