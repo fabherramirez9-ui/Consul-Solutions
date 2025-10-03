@@ -24,8 +24,7 @@ const Dashboard = () => {
   const loadDashboardData = async () => {
     try {
       // Load establishments
-      const establishmentsResponse = await axios.get(`${API}/establishments`);
-      const establishments = establishmentsResponse.data;
+      const establishments = await api.get('/establishments');
 
       // Mock stats for now - in production, these would come from backend
       setStats({
