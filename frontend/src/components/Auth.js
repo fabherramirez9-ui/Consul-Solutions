@@ -34,16 +34,32 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      const response = await axios.post(`${API}/auth/login`, {
-        email: formData.email,
-        password: formData.password
+      console.log("Attempting login...", { email: formData.email, api: API });
+      
+      const response = await fetch(`${API}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
       });
       
-      login(response.data.user, response.data.token);
-      toast.success("¡Bienvenido! Inicio de sesión exitoso");
-      navigate("/dashboard");
+      const data = await response.json();
+      console.log("Login response:", data);
+      
+      if (response.ok) {
+        login(data.user, data.token);
+        toast.success("¡Bienvenido! Inicio de sesión exitoso");
+        navigate("/dashboard");
+      } else {
+        toast.error(data.detail || "Error en el inicio de sesión");
+      }
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Error en el inicio de sesión");
+      console.error("Login error:", error);
+      toast.error("Error de conexión. Inténtalo de nuevo.");
     } finally {
       setLoading(false);
     }
