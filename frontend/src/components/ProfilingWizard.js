@@ -9,7 +9,7 @@ const API = `${BACKEND_URL}/api`;
 
 const ProfilingWizard = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, token } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   
