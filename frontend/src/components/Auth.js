@@ -70,19 +70,35 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      const response = await axios.post(`${API}/auth/register`, {
-        nombre: formData.nombre,
-        email: formData.email,
-        password: formData.password,
-        telefono: formData.telefono,
-        rfc: formData.rfc,
-        razon_social: formData.razon_social
+      console.log("Attempting register...", { email: formData.email, api: API });
+      
+      const response = await fetch(`${API}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nombre: formData.nombre,
+          email: formData.email,
+          password: formData.password,
+          telefono: formData.telefono,
+          rfc: formData.rfc,
+          razon_social: formData.razon_social
+        })
       });
       
-      toast.success("Registro exitoso. Procesando pago...");
-      setMode("payment");
+      const data = await response.json();
+      console.log("Register response:", data);
+      
+      if (response.ok) {
+        toast.success("Registro exitoso. Procesando pago...");
+        setMode("payment");
+      } else {
+        toast.error(data.detail || "Error en el registro");
+      }
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Error en el registro");
+      console.error("Register error:", error);
+      toast.error("Error de conexión. Inténtalo de nuevo.");
     } finally {
       setLoading(false);
     }
