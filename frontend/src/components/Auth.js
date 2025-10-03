@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { Shield, Mail, Lock, User, Phone, CreditCard } from "lucide-react";
 import { useAuth } from "../App";
 import { toast } from "sonner";
-import axios from "axios";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
