@@ -2,11 +2,8 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Brain, Send, Shield, MessageCircle, FileText, ExternalLink, Lightbulb, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import axios from "axios";
 import { useAuth } from "../App";
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { api } from "../utils/api";
 
 const AIAssistant = () => {
   const { user, logout } = useAuth();
