@@ -18,24 +18,40 @@ const SimpleLogin = () => {
     setResult('Logging in...');
     
     try {
-      console.log('Making axios request...');
-      const response = await axios.post(`${API}/auth/login`, {
-        email: email,
-        password: password
+      console.log('Making fetch request...');
+      const response = await fetch(`${API}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password
+        })
       });
       
-      console.log('Login response:', response.data);
-      setResult(`Success! Token: ${response.data.token.substring(0, 20)}...`);
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Login response:', data);
       
-      // Save token
-      localStorage.setItem('token', response.data.token);
-      
-      // Redirect to dashboard
-      window.location.href = '/dashboard';
+      if (response.ok) {
+        setResult(`Success! Token: ${data.token.substring(0, 20)}...`);
+        
+        // Save token
+        localStorage.setItem('token', data.token);
+        
+        // Redirect to dashboard
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1000);
+        
+      } else {
+        setResult(`Error: ${data.detail || 'Login failed'}`);
+      }
       
     } catch (error) {
       console.error('Login error:', error);
-      setResult(`Error: ${error.response?.data?.detail || error.message}`);
+      setResult(`Network Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
