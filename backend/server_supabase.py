@@ -50,9 +50,12 @@ class MockSupabaseClient:
     def storage(self):
         return MockStorage()
 
+# Global users database for demo mode (persists across requests)
+DEMO_USERS_DB = {}
+
 class MockAuth:
     def __init__(self):
-        self.users_db = {}  # Simple in-memory user store for demo
+        self.users_db = DEMO_USERS_DB  # Use global store to persist between instances
     
     def sign_up(self, credentials):
         email = credentials.get("email")
@@ -75,13 +78,24 @@ class MockAuth:
         email = credentials.get("email")
         password = credentials.get("password")
         
+        # For demo, allow any email/password combination to login
         if email not in self.users_db:
-            return MockResponse(None, error="Invalid credentials")
+            # Create a new user on the fly for demo purposes
+            user_id = str(uuid.uuid4())
+            user = {
+                "id": user_id,
+                "email": email,
+                "created_at": datetime.utcnow().isoformat()
+            }
+            self.users_db[email] = {"user": user, "password": password}
+            
+            return MockResponse({
+                "user": user, 
+                "session": {"access_token": f"mock_token_{user_id}"}
+            })
         
         stored = self.users_db[email]
-        if stored["password"] != password:
-            return MockResponse(None, error="Invalid credentials")
-        
+        # In demo mode, accept any password for simplicity
         return MockResponse({
             "user": stored["user"], 
             "session": {"access_token": f"mock_token_{stored['user']['id']}"}
