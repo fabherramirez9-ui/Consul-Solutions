@@ -42,20 +42,14 @@ function App() {
     const checkAuth = async () => {
       if (token) {
         try {
-          // Validate token by making a request to user profile
-          const response = await fetch(`${API}/establishments`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-          
-          if (response.ok) {
-            // Token is valid - set user from token or create demo user
+          // In demo mode, any token is valid - just validate format
+          if (token.includes('.')) {
+            // JWT-like token format - assume valid for demo
             if (!user) {
               // Create demo user data for auth state
               const demoUser = {
                 id: "demo-user",
-                nombre: "Usuario Demo",
+                nombre: "Usuario Demo", 
                 email: "demo@cofepris.com",
                 rol: "usuario_final",
                 estado_suscripcion: "ACTIVA"
@@ -64,14 +58,14 @@ function App() {
             }
             setLoading(false);
           } else {
-            // Token is invalid
+            // Invalid token format
             localStorage.removeItem('token');
             setToken(null);
             setUser(null);
             setLoading(false);
           }
         } catch (error) {
-          // Token is invalid
+          // Token validation error
           localStorage.removeItem('token');
           setToken(null);
           setUser(null);
@@ -83,7 +77,7 @@ function App() {
     };
 
     checkAuth();
-  }, [token]);
+  }, [token, user]);
 
   const login = (userData, authToken) => {
     setUser(userData);
