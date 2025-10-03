@@ -1,53 +1,136 @@
-import { useEffect } from "react";
-import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import axios from "axios";
+import "./App.css";
+
+// Components
+import Welcome from "./components/Welcome";
+import Auth from "./components/Auth";
+import Dashboard from "./components/Dashboard";
+import ProfilingWizard from "./components/ProfilingWizard";
+import SuggestionsView from "./components/SuggestionsView";
+import DocumentEditor from "./components/DocumentEditor";
+import AIAssistant from "./components/AIAssistant";
+import CourseSystem from "./components/CourseSystem";
+import FileManager from "./components/FileManager";
+import { Toaster } from "./components/ui/sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
+// Auth Context
+const AuthContext = React.createContext(null);
 
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
+export const useAuth = () => {
+  const context = React.useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
 
 function App() {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [loading, setLoading] = useState(true);
+
+  // Set up axios interceptor for authentication
+  useEffect(() => {
+    axios.defaults.headers.common['Authorization'] = token ? `Bearer ${token}` : '';
+  }, [token]);
+
+  // Check authentication status on app load
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (token) {
+        try {
+          // Validate token by making a request to user profile
+          const response = await axios.get(`${API}/establishments`);
+          // If request succeeds, token is valid
+          setLoading(false);
+        } catch (error) {
+          // Token is invalid
+          localStorage.removeItem('token');
+          setToken(null);
+          setUser(null);
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [token]);
+
+  const login = (userData, authToken) => {
+    setUser(userData);
+    setToken(authToken);
+    localStorage.setItem('token', authToken);
+    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+  };
+
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('token');
+    delete axios.defaults.headers.common['Authorization'];
+  };
+
+  const authContextValue = {
+    user,
+    token,
+    login,
+    logout,
+    isAuthenticated: !!token
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-cyan-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <AuthContext.Provider value={authContextValue}>
+      <div className="App">
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Welcome />} />
+            <Route path="/auth" element={
+              authContextValue.isAuthenticated ? <Navigate to="/dashboard" /> : <Auth />
+            } />
+            <Route path="/dashboard" element={
+              authContextValue.isAuthenticated ? <Dashboard /> : <Navigate to="/auth" />
+            } />
+            <Route path="/profiling" element={
+              authContextValue.isAuthenticated ? <ProfilingWizard /> : <Navigate to="/auth" />
+            } />
+            <Route path="/suggestions" element={
+              authContextValue.isAuthenticated ? <SuggestionsView /> : <Navigate to="/auth" />
+            } />
+            <Route path="/editor/:templateId?" element={
+              authContextValue.isAuthenticated ? <DocumentEditor /> : <Navigate to="/auth" />
+            } />
+            <Route path="/ai-assistant" element={
+              authContextValue.isAuthenticated ? <AIAssistant /> : <Navigate to="/auth" />
+            } />
+            <Route path="/course" element={
+              authContextValue.isAuthenticated ? <CourseSystem /> : <Navigate to="/auth" />
+            } />
+            <Route path="/files" element={
+              authContextValue.isAuthenticated ? <FileManager /> : <Navigate to="/auth" />
+            } />
+          </Routes>
+        </BrowserRouter>
+        <Toaster />
+      </div>
+    </AuthContext.Provider>
   );
 }
 
